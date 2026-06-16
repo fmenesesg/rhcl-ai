@@ -74,7 +74,7 @@ cp -r templates/github/.github ../gateforge/
 |-----------|------|
 | **M1 — Test foundation** | CI runs tests; minimum coverage on critical paths |
 | **M2 — Integration offline** | GateForge imports export v1 |
-| **M3 — E2E lab** | Documented and automatable seed→export→migrate pipeline |
+| **M3 — E2E lab** | Documented and automatable seed→export→migrate pipeline (`./scripts/e2e-lab.sh`) |
 
 ## License
 

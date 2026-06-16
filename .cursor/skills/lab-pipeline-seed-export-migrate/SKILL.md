@@ -8,8 +8,29 @@ description: Run lab pipeline seed, export, visualize, and GateForge migrate. Us
 ## Prerequisites
 
 - Lab 3scale tenant with Admin API token.
-- Docker or Podman + Red Hat toolbox image.
+- Docker or Podman + Red Hat toolbox image (for seed).
 - Variables: `THREESCALE_ADMIN_URL`, `THREESCALE_ACCESS_TOKEN`.
+- Sibling checkouts: `3scaleextract`, `gateforge`, `rhcl-ai` (see [setup-rhcl-workspace.sh](../../scripts/setup-rhcl-workspace.sh)).
+
+## One-command E2E (preferred)
+
+From **gateforge** (orchestrator):
+
+```bash
+cd gateforge && ./scripts/local-up.sh   # terminal 1
+export THREESCALE_ADMIN_URL=... THREESCALE_ACCESS_TOKEN=...
+export THREESCALEEXTRACT_ROOT=../3scaleextract
+./scripts/e2e-seed-export-analyze.sh
+```
+
+From **rhcl-ai** (wrapper):
+
+```bash
+export GATEFORGE_ROOT=../gateforge
+export THREESCALEEXTRACT_ROOT=../3scaleextract
+./scripts/e2e-lab.sh                    # E2E_MODE=auto (default)
+E2E_MODE=fixture ./scripts/e2e-lab.sh   # smoke without live 3scale
+```
 
 ## Step 1 — Seed (3scaleextract)
 
@@ -38,27 +59,31 @@ go build -o bin/threescale-visualize ./cmd/threescale-visualize
 bin/threescale-visualize ./export -o ./report
 ```
 
-## Step 4 — GateForge (live today / offline future)
+## Step 4 — GateForge analyze
 
-**Today:** GateForge discovers products via Admin API configured in Settings.
+**Live:** configure Admin API in GateForge `.env`; wizard or `E2E_MODE=live`.
 
-**Future (INT-2/3):** `POST /api/migration/import-export` with export v1 directory.
+**Offline (M2):** zip export → `POST /api/migration/import-export` → `POST /api/migration/analyze`. Automated by `E2E_MODE=auto|offline` in the orchestrator script.
 
 **Local GateForge:**
 
 ```bash
 cd gateforge
-cp .env.example .env   # configure 3scale + cluster
-./scripts/local-up.sh  # Podman compose
+cp .env.example .env   # THREESCALE_*, optional AI_*, THREESCALEEXTRACT_ROOT
+./scripts/local-up.sh
 # UI http://localhost:4200 → Migration Wizard
 ```
 
-## E2E criteria (INT-6)
+## E2E criteria (INT-6 / M3)
 
-For each seed product, `analyze()` produces a plan with AuthPolicy matching export auth mode.
+- Export manifest: `incomplete: false`, `product_count >= 4`
+- Analyze plan includes AuthPolicy per auth mode (API key + OIDC JWT for lab fixtures)
+- Optional OIDC consolidation warning for fictional issuer
 
 ## References
 
 - rhcl-ai/docs/workflows/seed-export-visualize-migrate.md
+- rhcl-ai/scripts/e2e-lab.sh
 - rhcl-ai/docs/workflows/local-lab-setup.md
 - 3scaleextract/docs/SEED.md
+- gateforge/scripts/e2e-seed-export-analyze.sh
